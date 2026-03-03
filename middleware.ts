@@ -11,7 +11,7 @@ export default withAuth(
     if (path.startsWith("/admin")) {
       if (!isAdmin) {
         // Redirect non-admin users to home page
-        return NextResponse.redirect(new URL("/", req.url))
+        return NextResponse.redirect(new URL("/auth/signup", req.url))
       }
       return NextResponse.next()
     }
