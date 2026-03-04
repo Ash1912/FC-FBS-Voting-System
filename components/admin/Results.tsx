@@ -21,6 +21,7 @@ export default function Results({ currentRound }: Props) {
   const [results, setResults] = useState<TeamResult[]>([])
   const [loading, setLoading] = useState(true)
   const [hoveredTeam, setHoveredTeam] = useState<string | null>(null)
+  const [exportLoading, setExportLoading] = useState(false)
 
   useEffect(() => {
     fetchResults()
@@ -59,6 +60,71 @@ export default function Results({ currentRound }: Props) {
       case 2: return { emoji: "🥈", label: "Silver", color: "from-gray-300 to-gray-400" }
       case 3: return { emoji: "🥉", label: "Bronze", color: "from-orange-400 to-orange-500" }
       default: return { emoji: "", label: "", color: "" }
+    }
+  }
+
+  const getRoundName = () => {
+    switch(currentRound) {
+      case 1: return "Round_1"
+      case 2: return "Round_2_Finals"
+      case 3: return "Final_Winners"
+      default: return "Results"
+    }
+  }
+
+  const exportToCSV = () => {
+    setExportLoading(true)
+    try {
+      // Define CSV headers
+      const headers = [
+        'Rank',
+        'Team Name',
+        'Team ID',
+        'Panelist Score (Raw)',
+        'Panelist Score (Weighted - 70%)',
+        'Audience Votes',
+        'Audience Score (Weighted - 30%)',
+        'Total Score'
+      ]
+
+      // Convert results to CSV rows
+      const rows = results.map(team => [
+        team.rank,
+        team.name,
+        team.id,
+        team.panelistScore,
+        team.panelistWeighted,
+        team.audienceVotes,
+        team.audienceWeighted,
+        team.totalScore
+      ])
+
+      // Combine headers and rows
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+      ].join('\n')
+
+      // Create download link
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      
+      // Set filename with current date and round
+      const date = new Date().toISOString().split('T')[0]
+      link.setAttribute('href', url)
+      link.setAttribute('download', `voting_results_${getRoundName()}_${date}.csv`)
+      link.style.visibility = 'hidden'
+      
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error("Error exporting CSV:", error)
+      alert("Failed to export results. Please try again.")
+    } finally {
+      setExportLoading(false)
     }
   }
 
@@ -113,7 +179,7 @@ export default function Results({ currentRound }: Props) {
           <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
             <p className="text-white/80 text-xs">Avg Score</p>
             <p className="text-white font-bold text-xl">
-              {(results.reduce((acc, team) => acc + team.totalScore, 0) / results.length).toFixed(1)}
+              {results.length > 0 ? (results.reduce((acc, team) => acc + team.totalScore, 0) / results.length).toFixed(1) : '0'}
             </p>
           </div>
         </div>
@@ -358,19 +424,26 @@ export default function Results({ currentRound }: Props) {
           )}
         </div>
 
-        {/* Export Button */}
+        {/* Single Export CSV Button */}
         <div className="mt-6 flex justify-end">
           <button
-            onClick={() => {
-              // Add export functionality here
-              console.log("Export results")
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+            onClick={exportToCSV}
+            disabled={exportLoading || results.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            Export Results
+            {exportLoading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Exporting...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span>Export as CSV</span>
+              </>
+            )}
           </button>
         </div>
       </div>
