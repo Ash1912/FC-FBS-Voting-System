@@ -59,6 +59,16 @@ model Vote {
   @@unique([userId, round])
 }
 
+model VotingControl {
+  id            String    @id @default(cuid())
+  round         Int       @unique
+  isActive      Boolean   @default(false)
+  startTime     DateTime?
+  endTime       DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
 enum UserRole {
   ADMIN
   PANELIST
