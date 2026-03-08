@@ -1,42 +1,63 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useSession } from "next-auth/react"
-import TeamManagement from "@/components/admin/TeamManagement"
-import VoteManagement from "@/components/admin/VoteManagement"
-import Results from "@/components/admin/Results"
-import VotingControl from "@/components/admin/VotingControl"
+import { useState } from "react";
+import { useSession } from "next-auth/react";
+import TeamManagement from "@/components/admin/TeamManagement";
+import VoteManagement from "@/components/admin/VoteManagement";
+import Results from "@/components/admin/Results";
+import VotingControl from "@/components/admin/VotingControl";
+import AudienceVotesExport from "@/components/admin/AudienceVotesExport"
 
 export default function AdminPage() {
-  const { data: session } = useSession()
-  const [activeTab, setActiveTab] = useState("teams")
-  const [currentRound, setCurrentRound] = useState(1)
+  const { data: session } = useSession();
+  const [activeTab, setActiveTab] = useState("teams");
+  const [currentRound, setCurrentRound] = useState(1);
 
   if (!session || session.user?.role !== "ADMIN") {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="bg-gradient-to-br from-white to-red-50 rounded-2xl shadow-xl p-8 md:p-12 max-w-md w-full text-center border border-red-100">
           <div className="text-7xl mb-6 animate-bounce">🔒</div>
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3">Access Denied</h2>
-          <p className="text-gray-600 mb-6">You need administrator privileges to access this panel.</p>
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3">
+            Access Denied
+          </h2>
+          <p className="text-gray-600 mb-6">
+            You need administrator privileges to access this panel.
+          </p>
           <div className="w-16 h-1 bg-gradient-to-r from-red-500 to-pink-500 mx-auto rounded-full"></div>
         </div>
       </div>
-    )
+    );
   }
 
   const tabs = [
     { id: "teams", label: "Team Management", icon: "👥" },
     { id: "votes", label: "Enter Votes", icon: "🗳️" },
     { id: "results", label: "View Results", icon: "📊" },
-    { id: "voting", label: "Voting Control", icon: "⏰" }
-  ]
+    { id: "voting", label: "Voting Control", icon: "⏰" },
+    { id: "audience", label: "Audience Votes", icon: "👤" },
+  ];
 
   const rounds = [
-    { value: 1, label: "Round 1", icon: "🎯", color: "from-blue-500 to-indigo-500" },
-    { value: 2, label: "Round 2", icon: "⚡", color: "from-purple-500 to-pink-500" },
-    { value: 3, label: "Round 3 (Final)", icon: "🏆", color: "from-yellow-500 to-orange-500" }
-  ]
+    {
+      value: 1,
+      label: "Round 1",
+      icon: "🎯",
+      color: "from-blue-500 to-indigo-500",
+    },
+    {
+      value: 2,
+      label: "Round 2",
+      icon: "⚡",
+      color: "from-purple-500 to-pink-500",
+    },
+    {
+      value: 3,
+      label: "Round 3 (Final)",
+      icon: "🏆",
+      color: "from-yellow-500 to-orange-500",
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50 py-6 px-4 sm:px-6 lg:px-8">
@@ -65,13 +86,25 @@ export default function AdminPage() {
             {/* Quick Stats */}
             <div className="flex items-center gap-3 bg-white/60 backdrop-blur-sm rounded-2xl p-3 shadow-lg border border-white/50">
               <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-2">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-5 h-5 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Server Time</p>
-                <p className="text-sm font-semibold text-gray-800">{new Date().toLocaleTimeString()}</p>
+                <p className="text-sm font-semibold text-gray-800">
+                  {new Date().toLocaleTimeString()}
+                </p>
               </div>
             </div>
           </div>
@@ -91,16 +124,17 @@ export default function AdminPage() {
                   className={`
                     relative flex-1 sm:flex-none px-6 py-3 rounded-xl font-medium text-sm sm:text-base
                     transition-all duration-300 transform hover:scale-105
-                    ${activeTab === tab.id
-                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg'
-                      : 'text-gray-600 hover:bg-gray-100'
+                    ${
+                      activeTab === tab.id
+                        ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg"
+                        : "text-gray-600 hover:bg-gray-100"
                     }
                   `}
                 >
                   <span className="flex items-center justify-center gap-2">
                     <span className="text-lg">{tab.icon}</span>
                     <span className="hidden sm:inline">{tab.label}</span>
-                    <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+                    <span className="sm:hidden">{tab.label.split(" ")[0]}</span>
                   </span>
                 </button>
               ))}
@@ -115,13 +149,25 @@ export default function AdminPage() {
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="flex items-center gap-3">
                   <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-2">
-                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    <svg
+                      className="w-5 h-5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                      />
                     </svg>
                   </div>
-                  <label className="font-semibold text-gray-700">Current Round:</label>
+                  <label className="font-semibold text-gray-700">
+                    Current Round:
+                  </label>
                 </div>
-                
+
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {rounds.map((round) => (
                     <button
@@ -129,16 +175,19 @@ export default function AdminPage() {
                       onClick={() => setCurrentRound(round.value)}
                       className={`
                         relative group overflow-hidden rounded-xl transition-all duration-300
-                        ${currentRound === round.value
-                          ? `bg-gradient-to-r ${round.color} text-white shadow-xl scale-105`
-                          : 'bg-white text-gray-700 hover:shadow-md border border-gray-200'
+                        ${
+                          currentRound === round.value
+                            ? `bg-gradient-to-r ${round.color} text-white shadow-xl scale-105`
+                            : "bg-white text-gray-700 hover:shadow-md border border-gray-200"
                         }
                       `}
                     >
                       <div className="absolute inset-0 bg-white/20 transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                       <div className="relative p-3 flex items-center justify-center gap-2">
                         <span className="text-xl">{round.icon}</span>
-                        <span className="font-medium text-sm md:text-base">{round.label}</span>
+                        <span className="font-medium text-sm md:text-base">
+                          {round.label}
+                        </span>
                         {currentRound === round.value && (
                           <span className="absolute top-1 right-1 w-2 h-2 bg-white rounded-full animate-ping"></span>
                         )}
@@ -154,9 +203,12 @@ export default function AdminPage() {
                   <span className="text-2xl">📌</span>
                   <div>
                     <p className="text-sm font-medium text-purple-800">
-                      {currentRound === 1 && "Round 1: All 12 teams compete. Top 6 qualify for Round 2."}
-                      {currentRound === 2 && "Round 2: Top 6 teams compete. Top 3 are the WINNERS! 🏆"}
-                      {currentRound === 3 && "Round 3: Final results - No voting. Winners displayed here."}
+                      {currentRound === 1 &&
+                        "Round 1: All 12 teams compete. Top 6 qualify for Round 2."}
+                      {currentRound === 2 &&
+                        "Round 2: Top 6 teams compete. Top 3 are the WINNERS! 🏆"}
+                      {currentRound === 3 &&
+                        "Round 3: Final results - No voting. Winners displayed here."}
                     </p>
                   </div>
                 </div>
@@ -169,7 +221,7 @@ export default function AdminPage() {
         <div className="relative">
           {/* Background Decoration */}
           <div className="absolute inset-0 bg-gradient-to-r from-purple-100/30 to-indigo-100/30 rounded-3xl blur-3xl -z-10"></div>
-          
+
           {/* Content Card */}
           <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-6 md:p-8 border border-white/50">
             {/* Tab Content with Animation */}
@@ -191,10 +243,15 @@ export default function AdminPage() {
               )}
               {activeTab === "voting" && (
                 <div className="animate-fade-in">
-                  <VotingControl 
-                    currentRound={currentRound} 
+                  <VotingControl
+                    currentRound={currentRound}
                     onRoundChange={setCurrentRound}
                   />
+                </div>
+              )}
+              {activeTab === "audience" && (
+                <div className="animate-fade-in">
+                  <AudienceVotesExport />
                 </div>
               )}
             </div>
@@ -205,7 +262,9 @@ export default function AdminPage() {
         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="bg-white/50 backdrop-blur-sm rounded-xl p-3 border border-white/50">
             <p className="text-xs text-gray-500">Active Tab</p>
-            <p className="font-semibold text-gray-800 capitalize">{activeTab}</p>
+            <p className="font-semibold text-gray-800 capitalize">
+              {activeTab}
+            </p>
           </div>
           <div className="bg-white/50 backdrop-blur-sm rounded-xl p-3 border border-white/50">
             <p className="text-xs text-gray-500">Current Round</p>
@@ -234,11 +293,11 @@ export default function AdminPage() {
             transform: translateY(0);
           }
         }
-        
+
         .animate-fade-in {
           animation: fadeIn 0.5s ease-out;
         }
       `}</style>
     </div>
-  )
+  );
 }

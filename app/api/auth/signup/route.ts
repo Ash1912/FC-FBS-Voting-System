@@ -10,7 +10,7 @@ const ADMIN_EMAILS = [
 
 export async function POST(req: Request) {
   try {
-    const { email, password, name } = await req.json()
+    const { email, password, name, pgp, section } = await req.json()
 
     if (!email || !password) {
       return NextResponse.json(
@@ -51,6 +51,8 @@ export async function POST(req: Request) {
         email,
         password: hashedPassword,
         name,
+        pgp: pgp || null,
+        section: section || null,
         role
       }
     })

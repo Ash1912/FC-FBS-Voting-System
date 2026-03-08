@@ -12,6 +12,8 @@ model User {
   email         String    @unique
   password      String
   name          String?
+  pgp           String?   // New field for PGP (e.g., "PGP1", "PGP2")
+  section       String?   // New field for Section (e.g., "A", "B", "C")
   role          UserRole  @default(AUDIENCE)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

@@ -18,6 +18,8 @@ export default function SignUp() {
   
   const nameRef = useRef<HTMLInputElement>(null)
   const emailRef = useRef<HTMLInputElement>(null)
+  const pgpRef = useRef<HTMLInputElement>(null)
+  const sectionRef = useRef<HTMLInputElement>(null)
   const passwordRef = useRef<HTMLInputElement>(null)
   const confirmPasswordRef = useRef<HTMLInputElement>(null)
 
@@ -38,6 +40,8 @@ export default function SignUp() {
     const formData = {
       name: nameRef.current?.value?.trim() || "",
       email: emailRef.current?.value?.trim() || "",
+      pgp: pgpRef.current?.value?.trim() || "",
+      section: sectionRef.current?.value?.trim() || "",
       password: passwordRef.current?.value || "",
       confirmPassword: confirmPasswordRef.current?.value || "",
     }
@@ -65,7 +69,9 @@ export default function SignUp() {
         body: JSON.stringify({ 
           email: formData.email, 
           password: formData.password, 
-          name: formData.name 
+          name: formData.name,
+          pgp: formData.pgp || null,
+          section: formData.section || null
         }),
       })
 
@@ -233,6 +239,34 @@ export default function SignUp() {
             />
           </div>
 
+          {/* PGP Input - New Optional Field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              PGP<span className="text-gray-400 text-xs">(optional)</span>
+            </label>
+            <input
+              type="text"
+              name="pgp"
+              placeholder="e.g., PGP1, PGP2, PGP2024"
+              ref={pgpRef}
+              className="w-full p-3 border-2 border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#6A4EFF] focus:border-transparent transition-all duration-300 focus:scale-[1.02] hover:border-[#B8AAFF]"
+            />
+          </div>
+
+          {/* Section Input - New Optional Field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Section <span className="text-gray-400 text-xs">(optional)</span>
+            </label>
+            <input
+              type="text"
+              name="section"
+              placeholder="e.g., A, B, C, Marketing, Finance"
+              ref={sectionRef}
+              className="w-full p-3 border-2 border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#6A4EFF] focus:border-transparent transition-all duration-300 focus:scale-[1.02] hover:border-[#B8AAFF]"
+            />
+          </div>
+
           {/* Email Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -332,18 +366,43 @@ export default function SignUp() {
             </div>
           </button>
 
-          {/* Email Rules Info */}
-          <div className="bg-gradient-to-r from-[#F1ECFF] to-[#E5DEFF] p-4 rounded-xl border border-[#B8AAFF]">
-            <p className="font-semibold text-[#313053] mb-2 flex items-center gap-2">
-              <span className="text-xl">📧</span>
-              Email Requirements:
-            </p>
-            <ul className="space-y-1 text-sm text-gray-600">
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-[#6356D7] rounded-full"></span>
-                Everyone must sign up with <span className="font-mono font-semibold text-[#6356D7]">@fostiima.org</span> email
-              </li>
-            </ul>
+          {/* Info Cards - Updated */}
+          <div className="space-y-3">
+            {/* Email Rules Info */}
+            <div className="bg-gradient-to-r from-[#F1ECFF] to-[#E5DEFF] p-4 rounded-xl border border-[#B8AAFF]">
+              <p className="font-semibold text-[#313053] mb-2 flex items-center gap-2">
+                <span className="text-xl">📧</span>
+                Email Requirements:
+              </p>
+              <ul className="space-y-1 text-sm text-gray-600">
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-[#6356D7] rounded-full"></span>
+                  Everyone must sign up with <span className="font-mono font-semibold text-[#6356D7]">@fostiima.org</span> email
+                </li>
+              </ul>
+            </div>
+
+            {/* PGP & Section Info - New */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200">
+              <p className="font-semibold text-[#313053] mb-2 flex items-center gap-2">
+                <span className="text-xl">📚</span>
+                PGP & Section (Optional):
+              </p>
+              <ul className="space-y-1 text-sm text-gray-600">
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                  Enter your PGP program (e.g., PGP1, PGP2, PGP2024)
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                  Enter your section (e.g., A, B, C, Marketing, Finance)
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                  This helps us analyze voting patterns across different groups
+                </li>
+              </ul>
+            </div>
           </div>
 
           {/* Mobile Sign In Link */}
