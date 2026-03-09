@@ -28,7 +28,7 @@ export default function VotePage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeam, setSelectedTeam] = useState("");
   const [currentRound, setCurrentRound] = useState(1);
-  const [hasVoted, setHasVoted] = useState(false);
+  const [voteCount, setVoteCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [fetchingTeams, setFetchingTeams] = useState(true);
@@ -85,7 +85,7 @@ export default function VotePage() {
       } else if (currentRound === 2) {
         fetchRound2Teams();
       }
-      checkVoteStatus();
+      fetchVoteCount();
     }
   }, [session, currentRound, votingStatus]);
 
@@ -113,6 +113,17 @@ export default function VotePage() {
       console.error("Error fetching voting status:", error);
     } finally {
       setCheckingStatus(false);
+    }
+  };
+
+  const fetchVoteCount = async () => {
+    try {
+      const res = await fetch(`/api/vote/status?round=${currentRound}`);
+      if (!res.ok) throw new Error("Failed to fetch vote count");
+      const data = await res.json();
+      setVoteCount(data.voteCount || 0);
+    } catch (error) {
+      console.error("Error fetching vote count:", error);
     }
   };
 
@@ -160,17 +171,6 @@ export default function VotePage() {
       });
     } finally {
       setFetchingTeams(false);
-    }
-  };
-
-  const checkVoteStatus = async () => {
-    try {
-      const res = await fetch(`/api/vote/status?round=${currentRound}`);
-      if (!res.ok) throw new Error("Failed to check vote status");
-      const data = await res.json();
-      setHasVoted(data.hasVoted);
-    } catch (error) {
-      console.error("Error checking vote status:", error);
     }
   };
 
@@ -223,9 +223,12 @@ export default function VotePage() {
       if (res.ok) {
         setMessage({
           type: "success",
-          text: `Vote cast successfully for Round ${currentRound}! Thank you for participating.`,
+          text: `Vote cast successfully for Round ${currentRound}!`,
         });
-        setHasVoted(true);
+        // Update vote count
+        setVoteCount(prev => prev + 1);
+        // Keep the same team selected for another vote
+        // setSelectedTeam(""); // Uncomment if you want to clear selection after each vote
       } else {
         setMessage({
           type: "error",
@@ -354,7 +357,7 @@ export default function VotePage() {
               </h1>
               <p className="text-gray-600 mt-1 flex items-center gap-2">
                 <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                Your voice matters • One vote per round
+                Your voice matters • Vote as many times as you want
               </p>
             </div>
           </div>
@@ -400,12 +403,21 @@ export default function VotePage() {
             </select>
           </div>
 
-          <p className="mt-3 text-sm text-gray-500 flex items-center gap-2">
-            <span
-              className={`w-1.5 h-1.5 ${roundInfo.isActive ? "bg-green-400" : "bg-red-400"} rounded-full animate-pulse`}
-            ></span>
-            {roundInfo.description}
-          </p>
+          <div className="mt-3 flex items-center justify-between">
+            <p className="text-sm text-gray-500 flex items-center gap-2">
+              <span
+                className={`w-1.5 h-1.5 ${roundInfo.isActive ? "bg-green-400" : "bg-red-400"} rounded-full animate-pulse`}
+              ></span>
+              {roundInfo.description}
+            </p>
+            
+            {/* Vote count badge */}
+            {voteCount > 0 && (
+              <span className="bg-purple-100 text-purple-700 text-xs px-3 py-1 rounded-full">
+                You've voted {voteCount} time{voteCount !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Round Info Card */}
@@ -428,339 +440,279 @@ export default function VotePage() {
               </p>
             </div>
           )}
+          {roundInfo.isActive && (
+            <div className="mt-4 bg-white/20 backdrop-blur-sm rounded-lg p-3 text-center">
+              <p className="text-white font-medium">
+                🗳️ You can vote multiple times! Each vote counts.
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Vote Status Card */}
-        {hasVoted ? (
-          <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-green-200">
-            <div className="text-center">
-              <div className="relative inline-block mb-6">
-                <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto animate-pulse">
-                  <svg
-                    className="w-12 h-12 text-green-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-white font-bold animate-bounce">
-                  ✓
-                </div>
-              </div>
+        {/* Voting Form - Always visible */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-6 md:p-8 border border-white/50">
+          {/* Message Alert */}
+          {message.text && (
+            <div
+              className={`mb-6 p-4 rounded-xl flex items-start gap-3 ${
+                message.type === "success"
+                  ? "bg-green-50 text-green-700 border-l-4 border-green-500"
+                  : "bg-red-50 text-red-700 border-l-4 border-red-500"
+              }`}
+            >
+              <span className="text-2xl">
+                {message.type === "success" ? "✅" : "❌"}
+              </span>
+              <span className="flex-1 font-medium">{message.text}</span>
+              <button
+                onClick={() => setMessage({ type: "", text: "" })}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+          )}
 
-              <h2 className="text-3xl font-bold text-gray-800 mb-3">
-                Thank You for Voting!
-              </h2>
-              <p className="text-gray-600 text-lg mb-2">
-                You have already voted in Round {currentRound}.
+          {teams.length === 0 ? (
+            <div className="text-center py-16 bg-gray-50 rounded-2xl">
+              <div className="text-6xl mb-4">📋</div>
+              <p className="text-gray-600 text-xl mb-2">
+                {currentRound === 1
+                  ? "No teams available"
+                  : "Round 2 teams not yet determined"}
               </p>
-
-              {currentRound === 1 && (
-                <p className="text-purple-600 font-medium mb-6">
-                  Come back for Round 2 to vote for the finals!
-                </p>
+              <p className="text-gray-400">
+                {currentRound === 1
+                  ? "Please check back later"
+                  : "Please wait for Round 1 results"}
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Round 1 Rankings Preview */}
+              {currentRound === 1 && round1Results.length > 0 && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-4">
+                  <p className="text-sm text-blue-700 font-medium mb-2 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                    Current Rankings (Top 6 qualify):
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {round1Results.slice(0, 6).map((team, i) => (
+                      <span
+                        key={team.id}
+                        className="text-xs bg-white px-2 py-1 rounded-full shadow-sm"
+                      >
+                        #{i + 1} {team.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               )}
 
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={() => router.push("/leaderboard")}
-                  className="relative group flex-1"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl blur-lg group-hover:blur-xl opacity-50 group-hover:opacity-75 transition-all duration-300"></div>
-                  <div className="relative bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-2xl transform hover:scale-105 transition-all duration-200">
-                    View Leaderboard
-                  </div>
-                </button>
-
-                {currentRound === 1 && (
-                  <button
-                    onClick={() => {
-                      setCurrentRound(2);
-                      setHasVoted(false);
-                    }}
-                    className="relative group flex-1"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl blur-lg group-hover:blur-xl opacity-50 group-hover:opacity-75 transition-all duration-300"></div>
-                    <div className="relative bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-2xl transform hover:scale-105 transition-all duration-200">
-                      Go to Round 2
-                    </div>
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-6 md:p-8 border border-white/50">
-            {/* Message Alert */}
-            {message.text && (
-              <div
-                className={`mb-6 p-4 rounded-xl flex items-start gap-3 ${
-                  message.type === "success"
-                    ? "bg-green-50 text-green-700 border-l-4 border-green-500"
-                    : "bg-red-50 text-red-700 border-l-4 border-red-500"
-                }`}
-              >
-                <span className="text-2xl">
-                  {message.type === "success" ? "✅" : "❌"}
-                </span>
-                <span className="flex-1 font-medium">{message.text}</span>
-                <button
-                  onClick={() => setMessage({ type: "", text: "" })}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-            )}
-
-            {teams.length === 0 ? (
-              <div className="text-center py-16 bg-gray-50 rounded-2xl">
-                <div className="text-6xl mb-4">📋</div>
-                <p className="text-gray-600 text-xl mb-2">
+              {/* Teams List */}
+              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                <label className="block font-semibold text-gray-700 mb-4 text-lg">
                   {currentRound === 1
-                    ? "No teams available"
-                    : "Round 2 teams not yet determined"}
-                </p>
-                <p className="text-gray-400">
-                  {currentRound === 1
-                    ? "Please check back later"
-                    : "Please wait for Round 1 results"}
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Round 1 Rankings Preview */}
-                {currentRound === 1 && round1Results.length > 0 && (
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-4">
-                    <p className="text-sm text-blue-700 font-medium mb-2 flex items-center gap-2">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                      Current Rankings (Top 6 qualify):
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {round1Results.slice(0, 6).map((team, i) => (
-                        <span
-                          key={team.id}
-                          className="text-xs bg-white px-2 py-1 rounded-full shadow-sm"
-                        >
-                          #{i + 1} {team.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                    ? "Select a team to vote for (12 teams):"
+                    : "Select a team to vote for in the FINALS (6 teams):"}
+                </label>
 
-                {/* Teams List */}
-                <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                  <label className="block font-semibold text-gray-700 mb-4 text-lg">
-                    {currentRound === 1
-                      ? "Select a team to vote for (12 teams):"
-                      : "Select a team to vote for in the FINALS (6 teams):"}
-                  </label>
+                {teams.map((team, index) => {
+                  const isTop3 = currentRound === 2 && index < 3;
+                  const teamRank =
+                    round1Results.find((r: any) => r.id === team.id)?.rank ||
+                    index + 1;
 
-                  {teams.map((team, index) => {
-                    const isTop3 = currentRound === 2 && index < 3;
-                    const teamRank =
-                      round1Results.find((r: any) => r.id === team.id)?.rank ||
-                      index + 1;
-
-                    return (
+                  return (
+                    <div
+                      key={team.id}
+                      className={`
+                        relative group cursor-pointer transition-all duration-300
+                        ${hoveredTeam === team.id ? "transform scale-[1.02]" : ""}
+                      `}
+                      onClick={() => setSelectedTeam(team.id)}
+                      onMouseEnter={() => setHoveredTeam(team.id)}
+                      onMouseLeave={() => setHoveredTeam(null)}
+                    >
+                      {/* Background Glow Effect */}
                       <div
-                        key={team.id}
                         className={`
-                          relative group cursor-pointer transition-all duration-300
-                          ${hoveredTeam === team.id ? "transform scale-[1.02]" : ""}
-                        `}
-                        onClick={() => setSelectedTeam(team.id)}
-                        onMouseEnter={() => setHoveredTeam(team.id)}
-                        onMouseLeave={() => setHoveredTeam(null)}
+                        absolute inset-0 rounded-2xl blur-xl transition-all duration-300
+                        ${
+                          selectedTeam === team.id
+                            ? "bg-gradient-to-r from-purple-600/30 to-indigo-600/30"
+                            : "bg-transparent"
+                        }
+                      `}
+                      ></div>
+
+                      {/* Main Card */}
+                      <div
+                        className={`
+                        relative p-5 rounded-2xl border-2 transition-all duration-300
+                        ${
+                          selectedTeam === team.id
+                            ? "border-purple-500 bg-gradient-to-r from-purple-50 to-indigo-50 shadow-xl"
+                            : "border-gray-200 bg-white hover:border-purple-300 hover:shadow-lg"
+                        }
+                        ${isTop3 ? "bg-gradient-to-r from-yellow-50 to-amber-50" : ""}
+                      `}
                       >
-                        {/* Background Glow Effect */}
-                        <div
-                          className={`
-                          absolute inset-0 rounded-2xl blur-xl transition-all duration-300
-                          ${
-                            selectedTeam === team.id
-                              ? "bg-gradient-to-r from-purple-600/30 to-indigo-600/30"
-                              : "bg-transparent"
-                          }
-                        `}
-                        ></div>
-
-                        {/* Main Card */}
-                        <div
-                          className={`
-                          relative p-5 rounded-2xl border-2 transition-all duration-300
-                          ${
-                            selectedTeam === team.id
-                              ? "border-purple-500 bg-gradient-to-r from-purple-50 to-indigo-50 shadow-xl"
-                              : "border-gray-200 bg-white hover:border-purple-300 hover:shadow-lg"
-                          }
-                          ${isTop3 ? "bg-gradient-to-r from-yellow-50 to-amber-50" : ""}
-                        `}
-                        >
-                          <div className="flex items-start gap-4">
-                            {/* Rank Indicator */}
-                            <div className="flex-shrink-0">
-                              <div
-                                className={`
-                                w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg
-                                ${index === 0 ? "bg-gradient-to-r from-yellow-400 to-yellow-500 text-white" : ""}
-                                ${index === 1 ? "bg-gradient-to-r from-gray-400 to-gray-500 text-white" : ""}
-                                ${index === 2 ? "bg-gradient-to-r from-orange-400 to-orange-500 text-white" : ""}
-                                ${index > 2 ? "bg-gray-200 text-gray-600" : ""}
-                              `}
-                              >
-                                {teamRank}
-                              </div>
-                              {isTop3 && (
-                                <div className="text-center mt-1">
-                                  <span className="text-xs font-bold text-yellow-600">
-                                    ⭐ FINALIST
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Radio Button */}
-                            <div className="flex-shrink-0 pt-1">
-                              <input
-                                type="radio"
-                                id={team.id}
-                                name="team"
-                                value={team.id}
-                                checked={selectedTeam === team.id}
-                                onChange={(e) =>
-                                  setSelectedTeam(e.target.value)
-                                }
-                                className="w-5 h-5 text-purple-600 focus:ring-purple-500"
-                              />
-                            </div>
-
-                            {/* Team Info */}
-                            <label
-                              htmlFor={team.id}
-                              className="flex-1 cursor-pointer"
+                        <div className="flex items-start gap-4">
+                          {/* Rank Indicator */}
+                          <div className="flex-shrink-0">
+                            <div
+                              className={`
+                              w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg
+                              ${index === 0 ? "bg-gradient-to-r from-yellow-400 to-yellow-500 text-white" : ""}
+                              ${index === 1 ? "bg-gradient-to-r from-gray-400 to-gray-500 text-white" : ""}
+                              ${index === 2 ? "bg-gradient-to-r from-orange-400 to-orange-500 text-white" : ""}
+                              ${index > 2 ? "bg-gray-200 text-gray-600" : ""}
+                            `}
                             >
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-bold text-lg text-gray-800">
-                                  {team.name}
+                              {teamRank}
+                            </div>
+                            {isTop3 && (
+                              <div className="text-center mt-1">
+                                <span className="text-xs font-bold text-yellow-600">
+                                  ⭐ FINALIST
                                 </span>
-                                {isTop3 && (
-                                  <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-medium">
-                                    Top 3 Contender
-                                  </span>
-                                )}
-                              </div>
-                              {team.description && (
-                                <p className="text-sm text-gray-600 line-clamp-2">
-                                  {team.description}
-                                </p>
-                              )}
-
-                              {/* Team Stats Tags */}
-                              <div className="flex flex-wrap gap-2 mt-2">
-                                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
-                                  ID: {team.id.slice(0, 6)}...
-                                </span>
-                                {currentRound === 2 && (
-                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                                    Round 2 Finalist
-                                  </span>
-                                )}
-                              </div>
-                            </label>
-
-                            {/* Selected Checkmark */}
-                            {selectedTeam === team.id && (
-                              <div className="flex-shrink-0">
-                                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-bounce-slow">
-                                  <svg
-                                    className="w-5 h-5 text-white"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={3}
-                                      d="M5 13l4 4L19 7"
-                                    />
-                                  </svg>
-                                </div>
                               </div>
                             )}
                           </div>
+
+                          {/* Radio Button */}
+                          <div className="flex-shrink-0 pt-1">
+                            <input
+                              type="radio"
+                              id={team.id}
+                              name="team"
+                              value={team.id}
+                              checked={selectedTeam === team.id}
+                              onChange={(e) =>
+                                setSelectedTeam(e.target.value)
+                              }
+                              className="w-5 h-5 text-purple-600 focus:ring-purple-500"
+                            />
+                          </div>
+
+                          {/* Team Info */}
+                          <label
+                            htmlFor={team.id}
+                            className="flex-1 cursor-pointer"
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-bold text-lg text-gray-800">
+                                {team.name}
+                              </span>
+                              {isTop3 && (
+                                <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-medium">
+                                  Top 3 Contender
+                                </span>
+                              )}
+                            </div>
+                            {team.description && (
+                              <p className="text-sm text-gray-600 line-clamp-2">
+                                {team.description}
+                              </p>
+                            )}
+
+                            {/* Team Stats Tags */}
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                                ID: {team.id.slice(0, 6)}...
+                              </span>
+                              {currentRound === 2 && (
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                  Round 2 Finalist
+                                </span>
+                              )}
+                            </div>
+                          </label>
+
+                          {/* Selected Checkmark */}
+                          {selectedTeam === team.id && (
+                            <div className="flex-shrink-0">
+                              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center animate-bounce-slow">
+                                <svg
+                                  className="w-5 h-5 text-white"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={3}
+                                    d="M5 13l4 4L19 7"
+                                  />
+                                </svg>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-
-                {/* Voting Info Card */}
-                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200">
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">📢</span>
-                    <div>
-                      <p className="text-sm font-medium text-purple-800 mb-1">
-                        Important:
-                      </p>
-                      <p className="text-xs text-purple-600">
-                        {currentRound === 1
-                          ? "You can vote only once in Round 1. Your vote will help determine which 6 teams advance to the finals."
-                          : "This is the final round! Your vote will help determine the top 3 champions. Vote wisely!"}
-                      </p>
                     </div>
+                  );
+                })}
+              </div>
+
+              {/* Voting Info Card - Updated */}
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">📢</span>
+                  <div>
+                    <p className="text-sm font-medium text-purple-800 mb-1">
+                      Important:
+                    </p>
+                    <p className="text-xs text-purple-600">
+                      {currentRound === 1
+                        ? "You can vote multiple times in Round 1! Each vote helps determine which 6 teams advance to the finals."
+                        : "This is the final round! You can vote multiple times. Each vote helps determine the top 3 champions."}
+                    </p>
                   </div>
                 </div>
+              </div>
 
-                {/* Submit Button */}
-                <button
-                  type="submit"
-                  disabled={loading || !selectedTeam || !roundInfo.isActive}
-                  className="relative group w-full"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl blur-lg group-hover:blur-xl opacity-50 group-hover:opacity-75 transition-all duration-300"></div>
-                  <div className="relative w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                    {loading ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>Submitting Vote...</span>
-                      </div>
-                    ) : !roundInfo.isActive ? (
-                      `Voting Closed for Round ${currentRound}`
-                    ) : (
-                      `Submit Vote for Round ${currentRound}`
-                    )}
-                  </div>
-                </button>
-              </form>
-            )}
-          </div>
-        )}
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading || !selectedTeam || !roundInfo.isActive}
+                className="relative group w-full"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl blur-lg group-hover:blur-xl opacity-50 group-hover:opacity-75 transition-all duration-300"></div>
+                <div className="relative w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {loading ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Submitting Vote...</span>
+                    </div>
+                  ) : !roundInfo.isActive ? (
+                    `Voting Closed for Round ${currentRound}`
+                  ) : (
+                    `Submit Vote for Round ${currentRound}`
+                  )}
+                </div>
+              </button>
+            </form>
+          )}
+        </div>
 
-        {/* Footer Info */}
+        {/* Footer Info - Updated */}
         <div className="mt-6 text-center text-sm text-gray-400">
-          <p>🔒 One vote per round • Your vote is anonymous and secure</p>
+          <p>🗳️ Vote as many times as you want • Each vote counts towards the total</p>
         </div>
       </div>
 

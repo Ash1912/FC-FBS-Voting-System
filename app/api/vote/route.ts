@@ -53,19 +53,19 @@ export async function POST(req: Request) {
     }
 
     // Check if user has already voted in this round
-    const existingVote = await prisma.vote.findFirst({
-      where: {
-        userId: session.user.id,
-        round: round
-      }
-    })
+    // const existingVote = await prisma.vote.findFirst({
+    //   where: {
+    //     userId: session.user.id,
+    //     round: round
+    //   }
+    // })
 
-    if (existingVote) {
-      return NextResponse.json(
-        { error: "You have already voted in this round" },
-        { status: 400 }
-      )
-    }
+    // if (existingVote) {
+    //   return NextResponse.json(
+    //     { error: "You have already voted in this round" },
+    //     { status: 400 }
+    //   )
+    // }
 
     // Create vote
     const vote = await prisma.vote.create({

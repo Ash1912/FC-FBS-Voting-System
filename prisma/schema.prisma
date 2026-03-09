@@ -57,8 +57,6 @@ model Vote {
   
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   team          Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, round])
 }
 
 model VotingControl {
