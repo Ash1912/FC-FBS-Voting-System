@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useSession } from "next-auth/react"
 
 interface TeamResult {
   id: string
@@ -14,13 +15,14 @@ interface TeamResult {
 }
 
 export default function LeaderboardPage() {
+  const { data: session, status } = useSession()
   const [currentRound, setCurrentRound] = useState(1)
   const [results, setResults] = useState<TeamResult[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [hoveredTeam, setHoveredTeam] = useState<string | null>(null)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null) // Fixed: useRef instead of useState
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetchResults()
@@ -41,9 +43,16 @@ export default function LeaderboardPage() {
     setError("")
     try {
       const res = await fetch(`/api/results?round=${currentRound}`)
-      if (!res.ok) {
-        throw new Error('Failed to fetch results')
+      
+      if (res.status === 401) {
+        setError("Please sign in to view the leaderboard")
+        return
       }
+      
+      if (!res.ok) {
+        throw new Error(`Failed to fetch results: ${res.status}`)
+      }
+      
       const data = await res.json()
       
       if (!data || data.length === 0) {
@@ -125,7 +134,7 @@ export default function LeaderboardPage() {
     { value: 3, label: "🏆 Final Winners (Top 3) 🏆", emoji: "🏆", color: "yellow" }
   ]
 
-  if (loading) {
+  if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50 py-12 px-4">
         <div className="max-w-7xl mx-auto">
@@ -306,7 +315,7 @@ export default function LeaderboardPage() {
             <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-white/50">
               <p className="text-sm text-gray-500 mb-1">Avg Score</p>
               <p className="text-2xl font-bold text-pink-600">
-                {(results.reduce((acc, team) => acc + team.totalScore, 0) / results.length).toFixed(1)}
+                {results.length > 0 ? (results.reduce((acc, team) => acc + team.totalScore, 0) / results.length).toFixed(1) : '0'}
               </p>
             </div>
           </div>

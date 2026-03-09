@@ -86,13 +86,13 @@ export default function Navbar() {
 
             {/* Desktop Menu - Right Side */}
             <div className="hidden md:flex items-center space-x-8">
-              <Link 
+              {/* <Link 
                 href="/leaderboard" 
                 className="text-[#313053] hover:text-[#8C5BFF] transition-all duration-300 text-base font-medium px-3 py-2 relative group"
               >
                 Leaderboard
                 <span className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-gradient-to-r from-[#8C5BFF] to-[#6356D7] group-hover:w-full group-hover:left-0 transition-all duration-300"></span>
-              </Link>
+              </Link> */}
               
               {session ? (
                 <div className="flex items-center space-x-4">
